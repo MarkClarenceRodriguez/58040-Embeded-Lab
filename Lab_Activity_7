@@ -1,0 +1,301 @@
+ Part A
+
+import tkinter as tk
+from tkinter import ttk
+
+
+# Initialize main Tkinter window
+root = tk.Tk()
+root.title('Sensor Dashboard - Lab 7')
+root.geometry('800x600')
+
+
+# Frame for Table View
+table_frame = ttk.LabelFrame(root, text=" Recent Logged Records ")
+table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+# Define Table Columns
+columns = ('timestamp', 'distance', 'motion')
+tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=8)
+
+
+# Format Column Headers
+tree.heading('timestamp', text='Timestamp')
+tree.heading('distance', text='Distance (cm)')
+tree.heading('motion', text='Motion Flag')
+
+
+# Format Column Widths & Alignment
+tree.column('timestamp', width=250, anchor='center')
+tree.column('distance', width=150, anchor='center')
+tree.column('motion', width=100, anchor='center')
+
+
+tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# Frame for Chart Placeholder (for Part B)
+plot_frame = ttk.LabelFrame(root, text=" Live Sensor Data Chart ")
+plot_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+# Start Tkinter Event Loop
+root.mainloop()
+
+
+PartB
+import os
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# Initialize Tkinter window
+root = tk.Tk()
+root.title('Sensor Dashboard - Lab 7 (Part B)')
+root.geometry('800x600')
+
+
+# Frame for Table View (from Part A)
+table_frame = ttk.LabelFrame(root, text=" Recent Logged Records ")
+table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+columns = ('timestamp', 'distance', 'motion')
+tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=6)
+tree.heading('timestamp', text='Timestamp')
+tree.heading('distance', text='Distance (cm)')
+tree.heading('motion', text='Motion Flag')
+tree.column('timestamp', width=250, anchor='center')
+tree.column('distance', width=150, anchor='center')
+tree.column('motion', width=100, anchor='center')
+tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# --- PART B: Matplotlib Embedded Chart Setup ---
+plot_frame = ttk.LabelFrame(root, text=" Live Sensor Data Chart ")
+plot_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+# Create Matplotlib Figure and Subplot Axis
+fig = Figure(figsize=(6, 3), dpi=100)
+ax = fig.add_subplot(111)
+
+
+# Embed Figure into Tkinter Canvas
+canvas = FigureCanvasTkAgg(fig, master=plot_frame)
+canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+
+
+def refresh():
+    # Load and render plot if log.csv exists
+    if os.path.exists('log.csv'):
+        try:
+            df = pd.read_csv('log.csv')
+            
+            # Clear previous axis plot
+            ax.clear()
+            
+            # Plot last 50 samples
+            plot_data = df.tail(50)
+            ax.plot(plot_data['distance'], marker='o', color='b', label='Distance (cm)')
+            ax.set_title('Distance Measurements (Last 50 Samples)')
+            ax.set_xlabel('Sample Index')
+            ax.set_ylabel('Distance (cm)')
+            ax.grid(True)
+            ax.legend(loc='upper right')
+            
+            # Redraw canvas
+            canvas.draw()
+        except Exception as e:
+            print(f"Error reading log.csv: {e}")
+
+
+    # Schedule refresh() to run again after 1000 ms (1 second)
+    root.after(1000, refresh)
+
+
+# Start refresh loop and main application loop
+refresh()
+root.mainloop()
+Part C
+import os
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# Initialize Tkinter window
+root = tk.Tk()
+root.title('Sensor Dashboard - Lab 7 (Part C)')
+root.geometry('800x600')
+
+
+# Frame for Table View
+table_frame = ttk.LabelFrame(root, text=" Recent Logged Records ")
+table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+columns = ('timestamp', 'distance', 'motion')
+tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=6)
+tree.heading('timestamp', text='Timestamp')
+tree.heading('distance', text='Distance (cm)')
+tree.heading('motion', text='Motion Flag')
+tree.column('timestamp', width=250, anchor='center')
+tree.column('distance', width=150, anchor='center')
+tree.column('motion', width=100, anchor='center')
+tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# Frame for Chart View
+plot_frame = ttk.LabelFrame(root, text=" Live Sensor Data Chart ")
+plot_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+fig = Figure(figsize=(6, 3), dpi=100)
+ax = fig.add_subplot(111)
+canvas = FigureCanvasTkAgg(fig, master=plot_frame)
+canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# --- PART C: Populating the Table and Keeping in Sync ---
+def refresh():
+    if os.path.exists('log.csv'):
+        try:
+            df = pd.read_csv('log.csv')
+            
+            # 1. Clear existing rows in the Treeview table
+            for item in tree.get_children():
+                tree.delete(item)
+                
+            # 2. Extract recent 10 rows and insert into Treeview
+            recent_df = df.tail(10)
+            for _, row in recent_df.iterrows():
+                tree.insert('', tk.END, values=(row['timestamp'], row['distance'], row['motion']))
+                
+            # 3. Update Matplotlib Chart
+            ax.clear()
+            plot_data = df.tail(50)
+            ax.plot(plot_data['distance'], marker='o', color='b', label='Distance (cm)')
+            ax.set_title('Distance Measurements (Last 50 Samples)')
+            ax.set_xlabel('Sample Index')
+            ax.set_ylabel('Distance (cm)')
+            ax.grid(True)
+            ax.legend(loc='upper right')
+            canvas.draw()
+
+
+        except Exception as e:
+            print(f"Error reading log.csv: {e}")
+
+
+    # Schedule next update in 1000 ms (1 second)
+    root.after(1000, refresh)
+
+
+# Start refresh and GUI main loop
+refresh()
+root.mainloop()
+Part D
+import os
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# ==========================================
+# DATA INGESTION MODULE (Decoupled Layer)
+# ==========================================
+def get_latest_data():
+    """
+    Data Abstraction Layer: Reads data from log.csv.
+    For Experiment 8 / Midterm, replace the contents of this function 
+    to fetch live serial data from Arduino/USB directly.
+    """
+    if os.path.exists('log.csv'):
+        try:
+            df = pd.read_csv('log.csv')
+            return df
+        except Exception as e:
+            print(f"Data Fetch Error: {e}")
+            return None
+    return None
+
+
+# ==========================================
+# GUI PRESENTATION MODULE (Tkinter Layout)
+# ==========================================
+root = tk.Tk()
+root.title('Sensor Dashboard - Lab 7 (Part D Final)')
+root.geometry('800x600')
+
+
+# Table View Frame
+table_frame = ttk.LabelFrame(root, text=" Recent Logged Records ")
+table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+columns = ('timestamp', 'distance', 'motion')
+tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=6)
+tree.heading('timestamp', text='Timestamp')
+tree.heading('distance', text='Distance (cm)')
+tree.heading('motion', text='Motion Flag')
+tree.column('timestamp', width=250, anchor='center')
+tree.column('distance', width=150, anchor='center')
+tree.column('motion', width=100, anchor='center')
+tree.pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# Chart Frame
+plot_frame = ttk.LabelFrame(root, text=" Live Sensor Data Chart ")
+plot_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+
+fig = Figure(figsize=(6, 3), dpi=100)
+ax = fig.add_subplot(111)
+canvas = FigureCanvasTkAgg(fig, master=plot_frame)
+canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+
+
+# ==========================================
+# CONTROLLER / REFRESH LOGIC
+# ==========================================
+def refresh():
+    # 1. Fetch data from abstract provider
+    df = get_latest_data()
+    
+    if df is not None and not df.empty:
+        # 2. Update Table View
+        for item in tree.get_children():
+            tree.delete(item)
+            
+        recent_df = df.tail(10)
+        for _, row in recent_df.iterrows():
+            tree.insert('', tk.END, values=(row['timestamp'], row['distance'], row['motion']))
+            
+        # 3. Update Chart View
+        ax.clear()
+        plot_data = df.tail(50)
+        ax.plot(plot_data['distance'], marker='o', color='b', label='Distance (cm)')
+        ax.set_title('Distance Measurements (Last 50 Samples)')
+        ax.set_xlabel('Sample Index')
+        ax.set_ylabel('Distance (cm)')
+        ax.grid(True)
+        ax.legend(loc='upper right')
+        canvas.draw()
+
+
+    # Schedule next refresh cycle (1 second)
+    root.after(1000, refresh)
+
+
+# Launch Dashboard
+refresh()
+root.mainloop()
